@@ -1,0 +1,68 @@
+extension UITabBarItem{
+    
+    func add(image:String?){
+        
+        guard let image = image else {
+            self.set()
+            return
+        }
+            
+        if let image = cache.object(forKey: image as NSString){
+            self.set(image: image)
+        } else if let url = URL(string: Apis.imageUrl.rawValue + image),let data = try? Data(contentsOf: url),let rawImage = UIImage(data: data),let i = rawImage.resize(targetSize: .init(width: 30, height: 30))?.withRenderingMode(.alwaysOriginal){
+                cache.setObject(i, forKey: image as NSString)
+                self.set(image: i)
+            }else{
+                 self.set()
+            }
+    }
+    
+    func set(image:UIImage? = nil){
+        var img = image
+        if img == nil {
+            if let i = UIImage(named: "userprofile")?.withRenderingMode(.alwaysOriginal){
+                img = i.resize(targetSize: .init(width: 30, height: 30))
+            }
+        }
+        
+        DispatchQueue.main.async {
+            self.image = img
+            self.selectedImage = img
+        }
+    }
+    
+    
+    
+}
+
+extension UIImage{
+    func resize(targetSize: CGSize) -> UIImage? {
+        let widthRatio  = targetSize.width  / size.width
+        let heightRatio = targetSize.height / size.height
+
+        // Figure out what our orientation is, and use that to form the rectangle
+        var newSize: CGSize
+        if(widthRatio > heightRatio) {
+            newSize = CGSize(width: size.width * heightRatio, height: size.height * heightRatio)
+        } else {
+            newSize = CGSize(width: size.width * widthRatio,  height: size.height * widthRatio)
+        }
+
+        // This is the rect that we've calculated out and this is what is actually used below
+        let rect = CGRect(x: 0, y: 0, width: newSize.width, height: newSize.height)
+         draw(in: rect)
+        
+        let iv: UIImageView = UIImageView()
+        iv.image = self
+        iv.contentMode = .scaleAspectFill
+        iv.frame = .init(origin: .zero, size: targetSize)
+        let layer = iv.layer
+        layer.masksToBounds = true
+        layer.cornerRadius = 15
+        UIGraphicsBeginImageContext(iv.bounds.size)
+        layer.render(in: UIGraphicsGetCurrentContext()!)
+        let roundedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        return roundedImage
+    }
+}
